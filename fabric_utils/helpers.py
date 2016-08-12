@@ -23,7 +23,11 @@ def requires_branch(cls):
     The decorator may be optionally passed a required branch name
     limiting the function execution scope to the specified branch only.
     """
-    def decorator(arg, required_branch=None):
+    def decorator(arg, required_branches=None):
+
+        if required_branches and not isinstance(required_branches, (tuple, list)):
+            required_branches = [required_branches]
+
         def wrapper(branch=None, *args, **kwargs):
             force_branch = kwargs.pop('force_branch', False)
             if not isinstance(branch, cls):
@@ -33,7 +37,7 @@ def requires_branch(cls):
                     raise ValueError('Not in a git repository. Provide a branch name')
                 branch = cls(branch_name)
             # check if the function is allowed to run with this particular branch
-            if not force_branch and required_branch and required_branch != branch.name:
+            if not force_branch and required_branche and branch.name not in required_branches:
                 puts('{} does not match the required branch {}'.format(branch.name, required_branch))
                 return
             return arg(branch, *args, **kwargs)
