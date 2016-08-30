@@ -2,7 +2,7 @@
 import os
 from contextlib import contextmanager
 
-from fabric.api import cd
+from fabric.api import cd, sudo, settings
 
 from .helpers import virtualenv
 
@@ -11,6 +11,7 @@ class PythonProject(object):
     python_bin = 'python'
     src = None
     env = None
+    user = None
 
     def __init__(self, *args, **kwargs):
         pass
@@ -37,6 +38,19 @@ class PythonProject(object):
 
     @contextmanager
     def activate(self, path=None):
-        with self.cd(path):
+        with self.cd(path), self.su():
             with virtualenv(self.env_bin):
                 yield
+
+    @contextmanager
+    def su(self):
+        """Run underlying sudo commands with specified user"""
+        with settings(sudo_user=self.user):
+            yield
+
+
+class DjangoProject(PythonProject):
+
+    def managepy(self, command):
+        with self.activate(), self.su():
+            return sudo('python manage.py {command}'.format(command=command))
