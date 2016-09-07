@@ -38,7 +38,7 @@ def requires_branch(cls):
                 branch = cls(branch_name)
             # check if the function is allowed to run with this particular branch
             if not force_branch and required_branches and branch.name not in required_branches:
-                puts('{} does not match the required branch {}'.format(branch.name, required_branch))
+                puts('{} does not match the required branches {}'.format(branch.name, required_branches))
                 return
             return arg(branch, *args, **kwargs)
 
