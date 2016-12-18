@@ -87,14 +87,14 @@ def checksum(filename, *paths):
     paths = ' '.join(paths)
     # check whether the files have changed (or the checksum file does not exist at all)
     with quiet():
-        if not sudo('tar cf - {} | gmd5sum -c {}'.format(paths, filename)).failed:
+        if not sudo('tar cf - {} | shasum -c {}'.format(paths, filename)).failed:
             modified = False
         else:
             modified = True
     yield modified
     # compute checksum for specified paths
     if modified:
-        sudo('tar cf - {} | gmd5sum > {}'.format(paths, filename))
+        sudo('tar cf - {} | shasum > {}'.format(paths, filename))
 
 
 template = partial(upload_template, use_jinja=True, backup=False)
