@@ -20,7 +20,6 @@ with open('README.rst') as readme_file:
 
 
 requirements = [
-    'Fabric>=1.10.2',
     'GitPython>=1.0.1',
     'Jinja2>=2.7',
 ]
