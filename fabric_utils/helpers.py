@@ -23,10 +23,7 @@ def requires_branch(cls):
     The decorator may be optionally passed a required branch name
     limiting the function execution scope to the specified branch only.
     """
-    def decorator(arg, required_branches=None):
-
-        if required_branches and not isinstance(required_branches, (tuple, list)):
-            required_branches = [required_branches]
+    def decorator(arg, *required_branches):
 
         def wrapper(branch=None, *args, **kwargs):
             force_branch = kwargs.pop('force_branch', False)
