@@ -43,7 +43,7 @@ def requires_branch(cls):
             return wraps(arg)(wrapper)
         else:
             def inner_dec(func):
-                return decorator(func, arg)
+                return decorator(func, arg, *required_branches)
             return inner_dec
     return decorator
 
