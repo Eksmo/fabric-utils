@@ -28,10 +28,9 @@ def branch_to_domain(branch_name, domain_pattern=None):
             else:
                 return match_obj.group(1)
     # replace all non-alphanumeric characters with a hyphen
-    else:
-        domain = re.sub(r'[^a-z0-9\-]', '-', branch_name.lower())
-        # replace double hyphens with a single character
-        return re.sub(r'-{2,}', '-', domain)
+    domain = re.sub(r'[^a-z0-9\-]', '-', branch_name.lower())
+    # replace double hyphens with a single character
+    return re.sub(r'-{2,}', '-', domain)
 
 
 def branch_to_slug(branch_name, **kwargs):
