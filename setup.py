@@ -22,6 +22,7 @@ with open('README.rst') as readme_file:
 requirements = [
     'GitPython>=1.0.1',
     'Jinja2>=2.7',
+    'requests>=2.10.0'
 ]
 
 setup(
