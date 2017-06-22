@@ -10,7 +10,7 @@ from fabric.utils import puts
 
 @task
 @runs_once
-def register_deployment(git_path='', revision=None, branch=None):
+def register_opbeat_deployment(git_path='', org_id=None, app_id=None, token=None, revision=None, branch=None):
     """
     Register deployment with opbeat
 
@@ -27,7 +27,7 @@ def register_deployment(git_path='', revision=None, branch=None):
               ' -d rev={revision}'
               ' -d branch={branch}'
               ' -d status=completed'.format(
-                org_id=env.org_id, app_id=env.app_id, token=env.token, revision=revision, branch=branch))
+                org_id=org_id, app_id=app_id, token=token, revision=revision, branch=branch))
 
 
 @task
