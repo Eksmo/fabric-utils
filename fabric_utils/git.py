@@ -5,6 +5,13 @@ import re
 
 from git import Repo
 
+__all__ = [
+    'get_active_branch_name',
+    'branch_to_domain',
+    'branch_to_slug',
+    'branch_to_db',
+]
+
 
 def get_active_branch_name(path=None):
     return Repo(path or os.getcwd()).active_branch.name
@@ -12,7 +19,7 @@ def get_active_branch_name(path=None):
 
 def branch_to_domain(branch_name, domain_pattern=None):
     """
-    Convert a git ranch name into a valid domain string.
+    Convert a git branch name into a valid domain string.
     """
     # obtain domain name using regex
     if domain_pattern:
@@ -30,12 +37,24 @@ def branch_to_domain(branch_name, domain_pattern=None):
     # replace all non-alphanumeric characters with a hyphen
     domain = re.sub(r'[^a-z0-9\-]', '-', branch_name.lower())
     # replace double hyphens with a single character
-    return re.sub(r'-{2,}', '-', domain)
+    domain = re.sub(r'-{2,}', '-', domain)
+    # replace master with empty string
+    return re.sub(r'^master$', '', domain)
 
 
 def branch_to_slug(branch_name, **kwargs):
+    """
+    Convert branch name to valid slug
+    """
+    if branch_name == 'master':
+        return branch_name
     return branch_to_domain(branch_name.split('/', 1)[-1], **kwargs)
 
 
 def branch_to_db(branch_name, **kwargs):
+    """
+    Convert branch name to valid database name
+    """
+    if branch_name == 'master':
+        return branch_name
     return branch_to_domain(branch_name, **kwargs).replace('-', '')
