@@ -45,10 +45,7 @@ def branch_to_url(base_domain, branch_name, domain_pattern=None):
     domain = branch_to_domain(branch_name, domain_pattern)
     if domain == 'master':
         return base_domain
-    return '{domain}.{base_domain}'.format(
-        domain=branch_to_domain(branch_name, domain_pattern),
-        base_domain=base_domain
-    )
+    return '{domain}.{base_domain}'.format(domain=domain, base_domain=base_domain)
 
 
 def branch_to_slug(branch_name, **kwargs):
