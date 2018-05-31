@@ -78,14 +78,14 @@ def check_http_is_200_ok():
     with settings(hide('stdout')):
         command = 'curl -sSL -D - {healthcheck_url} -o /dev/null | head -n 1 | grep "200 OK"'.format(
             healthcheck_url=env.healthcheck_url)
-        result = sudo(command, warn_only=True, user=env.user)
+        result = sudo(command, warn_only=True, shell=False, user=env.user)
         return result
 
 
 def check_role_is_up(role, check_task_func):
-    is_uwsgi_up_values = execute(check_task_func, role=role).values()
-    all_hosts_up = all(r.succeeded for r in is_uwsgi_up_values)
-    joint_stderr = '\n'.join(r.stdout for r in is_uwsgi_up_values)
+    is_service_up_values = execute(check_task_func, role=role).values()
+    all_hosts_up = all(r.succeeded for r in is_service_up_values)
+    joint_stderr = '\n'.join(r.stdout for r in is_service_up_values)
     return all_hosts_up, joint_stderr
 
 
