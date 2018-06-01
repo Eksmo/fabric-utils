@@ -11,23 +11,7 @@ from fabric.utils import error
 @task
 @runs_once
 def register_opbeat_deployment(git_path='', org_id=None, app_id=None, token=None, revision=None, branch=None):
-    """
-    Register deployment with opbeat
-
-    :param git_path: relative path to git repo, to cd into
-    :param revision: release git full hash (detected automatically if not provided)
-    :param branch: release git branch (detected automatically if not provided)
-    :return: None
-    """
-    with lcd(git_path):
-        revision = revision or local('git log -n 1 --pretty="format:%H"', capture=True)
-        branch = branch or local('git rev-parse --abbrev-ref HEAD', capture=True)
-        local('curl https://intake.opbeat.com/api/v1/organizations/{org_id}/apps/{app_id}/releases/'
-              ' -H "Authorization: Bearer {token}"'
-              ' -d rev={revision}'
-              ' -d branch={branch}'
-              ' -d status=completed'.format(
-                org_id=org_id, app_id=app_id, token=token, revision=revision, branch=branch))
+    """Does nothing, because opbeat no longer exists"""
 
 
 @task
