@@ -3,7 +3,7 @@ import re
 from time import sleep
 
 from fabric.api import puts, local, task, runs_once, lcd, settings, hide, env
-from fabric.operations import sudo
+from fabric.operations import run
 from fabric.tasks import execute
 from fabric.utils import error
 
@@ -11,23 +11,7 @@ from fabric.utils import error
 @task
 @runs_once
 def register_opbeat_deployment(git_path='', org_id=None, app_id=None, token=None, revision=None, branch=None):
-    """
-    Register deployment with opbeat
-
-    :param git_path: relative path to git repo, to cd into
-    :param revision: release git full hash (detected automatically if not provided)
-    :param branch: release git branch (detected automatically if not provided)
-    :return: None
-    """
-    with lcd(git_path):
-        revision = revision or local('git log -n 1 --pretty="format:%H"', capture=True)
-        branch = branch or local('git rev-parse --abbrev-ref HEAD', capture=True)
-        local('curl https://intake.opbeat.com/api/v1/organizations/{org_id}/apps/{app_id}/releases/'
-              ' -H "Authorization: Bearer {token}"'
-              ' -d rev={revision}'
-              ' -d branch={branch}'
-              ' -d status=completed'.format(
-                org_id=org_id, app_id=app_id, token=token, revision=revision, branch=branch))
+    """Does nothing, because opbeat no longer exists"""
 
 
 @task
@@ -69,7 +53,7 @@ def check_uwsgi_is_200_ok():
     with app.activate(), settings(hide('stdout')):
         command = 'uwsgi_curl 127.0.0.1:{uwsgi_port} {healthcheck_url} | head -n 1 | grep "200 OK"'.format(
             uwsgi_port=env.uwsgi_port, healthcheck_url=env.healthcheck_url)
-        result = sudo(command, warn_only=True, user=env.user)
+        result = run(command, warn_only=True, shell=False)
         return result
 
 
@@ -78,7 +62,7 @@ def check_http_is_200_ok():
     with settings(hide('stdout')):
         command = 'curl -sSL -D - {healthcheck_url} -o /dev/null | head -n 1 | grep "200 OK"'.format(
             healthcheck_url=env.healthcheck_url)
-        result = sudo(command, warn_only=True, shell=False, user=env.user)
+        result = run(command, warn_only=True, shell=False)
         return result
 
 
