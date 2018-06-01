@@ -3,7 +3,7 @@ import re
 from time import sleep
 
 from fabric.api import puts, local, task, runs_once, lcd, settings, hide, env
-from fabric.operations import sudo
+from fabric.operations import run
 from fabric.tasks import execute
 from fabric.utils import error
 
@@ -69,7 +69,7 @@ def check_uwsgi_is_200_ok():
     with app.activate(), settings(hide('stdout')):
         command = 'uwsgi_curl 127.0.0.1:{uwsgi_port} {healthcheck_url} | head -n 1 | grep "200 OK"'.format(
             uwsgi_port=env.uwsgi_port, healthcheck_url=env.healthcheck_url)
-        result = sudo(command, warn_only=True, user=env.user)
+        result = run(command, warn_only=True, shell=False)
         return result
 
 
@@ -78,7 +78,7 @@ def check_http_is_200_ok():
     with settings(hide('stdout')):
         command = 'curl -sSL -D - {healthcheck_url} -o /dev/null | head -n 1 | grep "200 OK"'.format(
             healthcheck_url=env.healthcheck_url)
-        result = sudo(command, warn_only=True, shell=False, user=env.user)
+        result = run(command, warn_only=True, shell=False)
         return result
 
 
