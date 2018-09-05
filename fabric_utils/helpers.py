@@ -80,18 +80,42 @@ def virtualenv(virtualenv_path):
 
 
 @contextmanager
-def checksum(filename, *paths):
-    paths = ' '.join(paths)
+def checksum(filename, *files_or_dirs):
+    paths = ' '.join(files_or_dirs)
     # check whether the files have changed (or the checksum file does not exist at all)
     with quiet():
-        if not sudo('tar cf - {} | shasum -c {}'.format(paths, filename)).failed:
+        if not sudo('find {paths} -type f -print0 | sort -z | xargs -0 tar cf - | shasum -c {filename}'
+                    .format(paths=paths, filename=filename)).failed:
             modified = False
         else:
             modified = True
     yield modified
     # compute checksum for specified paths
     if modified:
-        sudo('tar cf - {} | shasum > {}'.format(paths, filename))
+        sudo('find {paths} -type f -print0 | sort -z | xargs -0 tar cf - | shasum > {filename}'
+             .format(paths=paths, filename=filename))
+
+
+def get_checksum(*files_or_dirs):
+    """
+    Calculate sha checksum for list of given files or directories.
+    """
+    paths = ' '.join(files_or_dirs)
+    # what this command does is:
+    shasum = sudo('find {paths} -type f -print0 | sort -z | xargs -0 tar cf - | tar xOf - | shasum'
+                  .format(paths=paths))
+
+    if shasum.failed:
+        raise Exception('failed to get shasum for specified files')
+
+    return str(shasum).split(' ', 1)[0]
+
+
+def readlink(path):
+    with quiet():
+        result = sudo('readlink {path}'.format(path=path))
+    if not result.failed:
+        return str(result)
 
 
 template = partial(upload_template, use_jinja=True, backup=False)
