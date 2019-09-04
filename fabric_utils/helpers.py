@@ -1,5 +1,5 @@
-# coding: utf-8
 import os
+import re
 from functools import partial, wraps
 from contextlib import contextmanager
 
@@ -35,7 +35,7 @@ def requires_branch(cls):
                 branch = cls(branch_name)
             # check if the function is allowed to run with this particular branch
             if not force_branch and required_branches and branch.name not in required_branches:
-                puts('{} does not match the required branches {}'.format(branch.name, required_branches))
+                puts(f'{branch.name} does not match the required branches {", ".join(required_branches)}')
                 return
             return arg(branch, *args, **kwargs)
 
@@ -64,7 +64,7 @@ def requires_user(func):
 
 @requires_user
 def managepy(command, user, call):
-    return call('python manage.py {}'.format(command))
+    return call(f'python manage.py {command}')
 
 
 @contextmanager
@@ -84,16 +84,14 @@ def checksum(filename, *files_or_dirs):
     paths = ' '.join(files_or_dirs)
     # check whether the files have changed (or the checksum file does not exist at all)
     with quiet():
-        if not sudo('find {paths} -type f -print0 | sort -z | xargs -0 tar cf - | shasum -c {filename}'
-                    .format(paths=paths, filename=filename)).failed:
+        if not sudo(f'find {paths} -type f -print0 | sort -z | xargs -0 tar cf - | shasum -c {filename}').failed:
             modified = False
         else:
             modified = True
     yield modified
     # compute checksum for specified paths
     if modified:
-        sudo('find {paths} -type f -print0 | sort -z | xargs -0 tar cf - | shasum > {filename}'
-             .format(paths=paths, filename=filename))
+        sudo(f'find {paths} -type f -print0 | sort -z | xargs -0 tar cf - | shasum > {filename}')
 
 
 def get_checksum(*files_or_dirs):
@@ -102,8 +100,7 @@ def get_checksum(*files_or_dirs):
     """
     paths = ' '.join(files_or_dirs)
     # what this command does is:
-    shasum = sudo('find {paths} -type f -print0 | sort -z | xargs -0 tar cf - | tar xOf - | shasum'
-                  .format(paths=paths))
+    shasum = sudo(f'find {paths} -type f -print0 | sort -z | xargs -0 tar cf - | tar xOf - | shasum')
 
     if shasum.failed:
         raise Exception('failed to get shasum for specified files')
@@ -113,9 +110,19 @@ def get_checksum(*files_or_dirs):
 
 def readlink(path):
     with quiet():
-        result = sudo('readlink {path}'.format(path=path))
+        result = sudo(f'readlink {path}')
     if not result.failed:
         return str(result)
+
+
+def slugify_version(version):
+    # Python 2.7.15 -> python_2_7_15
+    return re.sub(r'[^\d\w]+', '_', version).lower()
+
+
+def slugify_command_version(command, user=None):
+    command_output = str(sudo(command, user=user))
+    return slugify_version(command_output)
 
 
 template = partial(upload_template, use_jinja=True, backup=False)

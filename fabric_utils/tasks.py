@@ -51,8 +51,7 @@ def check_uwsgi_is_200_ok():
     global app
 
     with app.activate(), settings(hide('stdout')):
-        command = 'uwsgi_curl 127.0.0.1:{uwsgi_port} {healthcheck_url} | head -n 1 | grep "200 OK"'.format(
-            uwsgi_port=env.uwsgi_port, healthcheck_url=env.healthcheck_url)
+        command = f'uwsgi_curl 127.0.0.1:{env.uwsgi_port} {env.healthcheck_url} | head -n 1 | grep "200 OK"'
         result = run(command, warn_only=True, shell=False)
         return result
 
@@ -60,8 +59,7 @@ def check_uwsgi_is_200_ok():
 @task
 def check_http_is_200_ok():
     with settings(hide('stdout')):
-        command = 'curl -sSL -D - {healthcheck_url} -o /dev/null | head -n 1 | grep "200 OK"'.format(
-            healthcheck_url=env.healthcheck_url)
+        command = f'curl -sSL -D - {env.healthcheck_url} -o /dev/null | head -n 1 | grep "200 OK"'
         result = run(command, warn_only=True, shell=False)
         return result
 

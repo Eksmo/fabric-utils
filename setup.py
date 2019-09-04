@@ -28,9 +28,9 @@ requirements = [
 setup(
     name='fabric-utils',
     version=get_version('fabric_utils'),
-    description='Fabric utils',
+    description='MyBook Fabric Utils',
     long_description=readme,
-    author='MyBook',
+    author='MyBook Devs',
     author_email='dev@mybook.ru',
     url='https://github.com/MyBook/fabric-utils',
     packages=['fabric_utils'],
@@ -45,7 +45,7 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
     ],
 )

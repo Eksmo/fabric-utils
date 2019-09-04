@@ -1,4 +1,3 @@
-# coding: utf-8
 import os
 from contextlib import contextmanager
 
@@ -7,7 +6,7 @@ from fabric.api import cd, sudo, settings
 from .helpers import virtualenv
 
 
-class PythonProject(object):
+class PythonProject:
     python_bin = 'python'
     src = None
     env = None
@@ -53,4 +52,4 @@ class DjangoProject(PythonProject):
 
     def managepy(self, command):
         with self.activate(), self.su():
-            return sudo('python manage.py {command}'.format(command=command))
+            return sudo(f'python manage.py {command}')
