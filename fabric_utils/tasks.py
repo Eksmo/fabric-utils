@@ -1,11 +1,6 @@
-# coding: utf-8
 import re
-from time import sleep
 
-from fabric.api import puts, local, task, runs_once, lcd, settings, hide, env
-from fabric.operations import run
-from fabric.tasks import execute
-from fabric.utils import error
+from fabric.api import puts, local, task, runs_once, settings, hide
 
 
 @task
@@ -39,65 +34,8 @@ def sqlmigrate(from_branch='origin/develop', to_branch='origin/master', prefix='
         local('git checkout %s' % from_branch)
     with settings(command_prefixes=[prefix]):
         for path in files.splitlines():
-            match = re.search('(\w+)/migrations/(\d+)', path)
+            match = re.search(r'(\w+)/migrations/(\d+)', path)
             if match:
                 local('python manage.py sqlmigrate %s %s' % (match.group(1), match.group(2)))
     if from_branch != current_remote:
         local('git checkout -')
-
-
-@task
-def check_uwsgi_is_200_ok():
-    global app
-
-    with app.activate(), settings(hide('stdout')):
-        command = f'uwsgi_curl 127.0.0.1:{env.uwsgi_port} {env.healthcheck_url} | head -n 1 | grep "200 OK"'
-        result = run(command, warn_only=True, shell=False)
-        return result
-
-
-@task
-def check_http_is_200_ok():
-    with settings(hide('stdout')):
-        command = f'curl -sSL -D - {env.healthcheck_url} -o /dev/null | head -n 1 | grep "200 OK"'
-        result = run(command, warn_only=True, shell=False)
-        return result
-
-
-def check_role_is_up(role, check_task_func):
-    is_service_up_values = execute(check_task_func, role=role).values()
-    all_hosts_up = all(r.succeeded for r in is_service_up_values)
-    joint_stderr = '\n'.join(r.stdout for r in is_service_up_values)
-    return all_hosts_up, joint_stderr
-
-
-def wait_until_role_is_up(role,
-                          healthcheck_url,
-                          check_task_func=check_http_is_200_ok,
-                          poll_interval_seconds=10,
-                          max_wait_seconds=20,
-                          warn_only=False):
-    """
-    Wait until all role hosts are considered healthy, e.g. returns 200 OK in response to GET healthcheck_url
-
-    :param role:
-    :param healthcheck_url: URL that must return 200 OK for host to be considered healthy
-    :param check_task_func: fabric task that does actual check, returns command result
-    :param poll_interval_seconds: health checks frequency in seconds
-    :param max_wait_seconds: maximum global wait timeout across all healthchecks
-    :param warn_only: If False (default), abort execution
-    :return: boolean
-    """
-    wait = 0
-    stderr = '-'
-    while wait < max_wait_seconds:
-        wait += poll_interval_seconds
-        sleep(poll_interval_seconds)
-        with settings(healthcheck_url=healthcheck_url):
-            is_up, stderr = check_role_is_up(role, check_task_func)
-        if is_up:
-            return True
-    else:
-        with settings(warn_only=warn_only):
-            error('Waited for %s seconds, role %s is not up. %s \n %s' % (
-                wait, role, 'Aborting' if not warn_only else '', stderr))
