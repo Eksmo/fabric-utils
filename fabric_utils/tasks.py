@@ -1,12 +1,6 @@
 import re
 
-from fabric.api import puts, local, task, runs_once, settings, hide
-
-
-@task
-@runs_once
-def register_opbeat_deployment(git_path='', org_id=None, app_id=None, token=None, revision=None, branch=None):
-    """Does nothing, because opbeat no longer exists"""
+from fabric.api import puts, local, task, settings, hide
 
 
 @task
