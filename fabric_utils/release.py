@@ -44,14 +44,15 @@ def get_release(target_branch: str) -> Release:
             sha_short = sha[:7]
             commits.append(Commit(sha=sha, sha_short=sha_short, msg=msg))
 
-    base_commit = commits[-1]
-    release_commits = _get_commits_for_release(commits[:-1], auto=bool(teamcity_release_sha))
+    base_commit = commits[-1] if commits else None
+    release_commit = commits[0] if commits else None
+    changelog_commits = _get_commits_for_release(commits[:-1], auto=bool(teamcity_release_sha))
 
-    return Release(base=base_commit, release=release_commits[-1], changelog=release_commits)
+    return Release(base=base_commit, release=release_commit, changelog=changelog_commits)
 
 
 def _get_revision_diff(from_revision, to_revision):
-    return sudo(f'git --no-pager log --pretty=oneline --no-color --no-decorate {from_revision}...{to_revision}')
+    return sudo(f'git --no-pager log --pretty=oneline --no-color --no-decorate {from_revision}..{to_revision}')
 
 
 def _get_commits_for_release(commits: List[Commit], auto: bool = False) -> List[Commit]:
