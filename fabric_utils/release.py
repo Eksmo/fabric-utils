@@ -1,8 +1,9 @@
 import os
 import re
+from functools import wraps
 from typing import List
 
-from fabric.api import quiet, sudo, fastprint, warn, prompt
+from fabric.api import quiet, sudo, fastprint, warn, prompt, execute, abort, settings
 from collections import namedtuple, OrderedDict
 
 
@@ -89,3 +90,24 @@ def _get_commits_for_release(commits: List[Commit], auto: bool = False) -> List[
 
     # reverse the order of commits
     return list(candidate_commits.values())
+
+
+class FabricException(Exception):
+    pass
+
+
+def with_deploy_lock(set_lock_task, delete_lock_task):
+    def decorator(deploy_task):
+        @wraps(deploy_task)
+        def inner(*args, **kwargs):
+            lock_acquired = list(execute(set_lock_task).values())[0]
+            if not lock_acquired:
+                abort('deploy lock is set')
+            with settings(abort_exception=FabricException):
+                try:
+                    result = deploy_task(*args, **kwargs)
+                finally:
+                    execute(delete_lock_task)
+            return result
+        return inner
+    return decorator
