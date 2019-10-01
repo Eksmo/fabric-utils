@@ -1,9 +1,11 @@
 import os
 import re
+import json
+from datetime import datetime
 from functools import wraps
-from typing import List
+from typing import List, Optional
 
-from fabric.api import quiet, sudo, fastprint, warn, prompt, execute, abort, settings
+from fabric.api import quiet, sudo, fastprint, warn, prompt, execute, abort, settings, run
 from collections import namedtuple, OrderedDict
 
 
@@ -42,7 +44,7 @@ def get_release(target_branch: str) -> Release:
         # gather changelog
         for commit in lines:
             sha, msg = commit.split(None, 1)
-            sha_short = sha[:7]
+            sha_short = sha[:6]
             commits.append(Commit(sha=sha, sha_short=sha_short, msg=msg))
 
     base_commit = commits[-1] if commits else None
@@ -111,3 +113,45 @@ def with_deploy_lock(set_lock_task, delete_lock_task):
             return result
         return inner
     return decorator
+
+
+def register_sentry_release(release: Release, *, sentry_url: str, org_id: str, projects: List[str],
+                            api_token: str, environment: str, github_repo: str,
+                            release_started_at: Optional[datetime] = None,
+                            release_finished_at: Optional[datetime] = None) -> None:
+    # https://docs.sentry.io/api/releases/post-organization-releases/
+    release_id = release.release.sha_short
+    sentry_url = sentry_url.rstrip('/')
+    releases_api_url = f'{sentry_url}/api/0/organizations/{org_id}/releases/'
+
+    # create a release
+    release_data = {
+        'version': release_id,
+        'refs': [{
+            'repository': github_repo,
+            'commit': release.release.sha,
+            'previousCommit': release.base.sha,
+        }],
+        'projects': projects
+    }
+    run(f'curl {releases_api_url}'
+        f' -X POST'
+        f' -H "Authorization: Bearer {api_token}"'
+        f' -H "Content-Type: application/json"'
+        f' -d \'{json.dumps(release_data)}\'')
+
+    release_url = f'{releases_api_url}{release_id}/'
+    # register a deployment
+    deployment_data = {
+        'environment': environment,
+    }
+    if release_started_at and release_finished_at:
+        deployment_data.update({
+            'dateStarted': release_started_at.isoformat(),
+            'dateFinished': release_finished_at.isoformat(),
+        })
+    run(f'curl {release_url}deploys/'
+        f' -X POST'
+        f' -H "Authorization: Bearer {api_token}"'
+        f' -H "Content-Type: application/json"'
+        f' -d \'{json.dumps(deployment_data)}\'')
