@@ -1,5 +1,5 @@
 from time import sleep
-from typing import Tuple, Callable
+from typing import Tuple, Callable, Any, Dict, Optional
 
 from fabric.api import puts, settings, hide
 from fabric.operations import run
@@ -22,8 +22,8 @@ def check_http_is_200_ok(healthcheck_url, status='200 OK'):
         return result
 
 
-def check_role_is_up(role: str, task: Callable) -> Tuple[dict, str]:
-    is_uwsgi_up_results = execute(task, role=role)
+def check_role_is_up(role: str, task: Callable, *task_args: Any, **task_kwargs: Any) -> Tuple[dict, str]:
+    is_uwsgi_up_results = execute(task, role=role, *task_args, **task_kwargs)
     per_hosts_success = {
         host: res.succeeded
         for host, res in is_uwsgi_up_results.items()
@@ -32,14 +32,17 @@ def check_role_is_up(role: str, task: Callable) -> Tuple[dict, str]:
     return per_hosts_success, joint_stderr
 
 
-def wait_until_role_is_up(*, role: str, task: Callable, poll_interval: int = 3, max_wait: int = 20) -> bool:
+def wait_until_role_is_up(*, role: str, task: Callable, poll_interval: int = 3, max_wait: int = 20,
+                          task_args: Optional[Tuple[Any]] = None, task_kwargs: Optional[Dict[str, Any]] = None) -> bool:
     waiting_seconds = 0
     stderr = '-'
+    task_args = task_args or ()
+    task_kwargs = task_kwargs or {}
 
     puts(f'waiting for {role} to be up for as long as {max_wait} seconds')
     while waiting_seconds < max_wait:
         # skip waiting on the first iteration, uwsgi may already be up
-        up_hosts, stderr = check_role_is_up(role, task)
+        up_hosts, stderr = check_role_is_up(role, task, *task_args, **task_kwargs)
         if all(up_hosts.values()):
             puts(f'role {role} is up after {waiting_seconds} seconds')
             return True
