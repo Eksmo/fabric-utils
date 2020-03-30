@@ -7,9 +7,10 @@ from fabric.tasks import execute
 from fabric.utils import error
 
 
-def check_uwsgi_is_200_ok(healthcheck_url, uwsgi_port, status='200 OK'):
+def check_uwsgi_is_200_ok(url, uwsgi_port=None, uwsgi_sock=None, status='200 OK'):
     with settings(hide('stdout')):
-        command = f'uwsgi_curl 127.0.0.1:{uwsgi_port} {healthcheck_url} | head -n 1 | grep "{status}"'
+        addr = f'127.0.0.1:{uwsgi_port}' if uwsgi_port else uwsgi_sock
+        command = f'uwsgi_curl {addr} {url} | head -n 1 | grep "{status}"'
         result = run(command, warn_only=True, shell=False)
         return result
 
