@@ -15,11 +15,13 @@ def check_uwsgi_is_200_ok(url, uwsgi_port=None, uwsgi_sock=None, status='200 OK'
         return result
 
 
-def check_http_is_200_ok(healthcheck_url, unix_sock=None, status='200 OK'):
+def check_http_is_200_ok(healthcheck_url, http_host=None, unix_sock=None, status='200 OK'):
     with settings(hide('stdout')):
         command = 'curl'
         if unix_sock:
             command = f'{command} --unix-socket {unix_sock}'
+        if http_host:
+            command = f'{command} -H "Host: {http_host}"'
         command = f'{command} -sSL -D - {healthcheck_url} -o /dev/null | head -n 1 | grep "{status}"'
         result = run(command, warn_only=True, shell=False)
         return result
