@@ -39,7 +39,7 @@ def docker_swarm_restart(label: str, value: str, stack: str,
     """
     service_format = '{{.Name}}'
     service_names = run(f'docker stack services '
-                        f'--format "{service_format}" --filter label={label}={value}'
+                        f'--format "{service_format}" --filter label={label}={value} '
                         f'{stack}')
     if 'Nothing found' in service_names:
         abort(r(f'no services found matching label "{label}={value}"'))
