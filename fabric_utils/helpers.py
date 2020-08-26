@@ -1,5 +1,6 @@
 import os
 import re
+from typing import Any
 from functools import partial, wraps
 from contextlib import contextmanager
 
@@ -123,6 +124,19 @@ def slugify_version(version):
 def slugify_command_version(command, user=None):
     command_output = str(sudo(command, user=user))
     return slugify_version(command_output)
+
+
+def to_bool(value: Any) -> bool:
+    """Convert a command line choice to a boolean value"""
+    true_values = ('yes', 'y', 'true', 't', '1')
+
+    if isinstance(value, (bool, int)):
+        return bool(value)
+
+    if isinstance(value, str) and value.lower() in true_values:
+        return True
+
+    return False
 
 
 template = partial(upload_template, use_jinja=True, backup=False)

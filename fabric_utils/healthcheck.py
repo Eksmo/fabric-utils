@@ -22,18 +22,18 @@ def check_http_is_200_ok(healthcheck_url, http_host=None, unix_sock=None, status
             command = f'{command} --unix-socket {unix_sock}'
         if http_host:
             command = f'{command} -H "Host: {http_host}"'
-        command = f'{command} -sSL -D - {healthcheck_url} -o /dev/null | head -n 1 | grep "{status}"'
+        command = f'{command} -sSL -D - "{healthcheck_url}" -o /dev/null | head -n 1 | grep "{status}"'
         result = run(command, warn_only=True, shell=False)
         return result
 
 
 def check_role_is_up(role: str, task: Callable, *task_args: Any, **task_kwargs: Any) -> Tuple[dict, str]:
-    is_uwsgi_up_results = execute(task, role=role, *task_args, **task_kwargs)
+    is_role_up_results = execute(task, role=role, *task_args, **task_kwargs)
     per_hosts_success = {
         host: res.succeeded
-        for host, res in is_uwsgi_up_results.items()
+        for host, res in is_role_up_results.items()
     }
-    joint_stderr = '\n'.join(r.stdout for r in is_uwsgi_up_results.values())
+    joint_stderr = '\n'.join(r.stdout for r in is_role_up_results.values())
     return per_hosts_success, joint_stderr
 
 
@@ -46,7 +46,7 @@ def wait_until_role_is_up(*, role: str, task: Callable, poll_interval: int = 3, 
 
     puts(f'waiting for {role} to be up for as long as {max_wait} seconds')
     while waiting_seconds < max_wait:
-        # skip waiting on the first iteration, uwsgi may already be up
+        # skip waiting on the first iteration, app may already be up
         up_hosts, stderr = check_role_is_up(role, task, *task_args, **task_kwargs)
         if all(up_hosts.values()):
             puts(f'role {role} is up after {waiting_seconds} seconds')
