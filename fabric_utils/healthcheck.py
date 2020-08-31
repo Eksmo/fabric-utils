@@ -28,12 +28,13 @@ def check_http_is_200_ok(healthcheck_url, http_host=None, unix_sock=None, status
 
 
 def check_role_is_up(role: str, task: Callable, *task_args: Any, **task_kwargs: Any) -> Tuple[dict, str]:
-    is_role_up_results = execute(task, role=role, *task_args, **task_kwargs)
+    with settings(parallel=True):
+        is_role_up_results = execute(task, role=role, *task_args, **task_kwargs)
     per_hosts_success = {
         host: res.succeeded
-        for host, res in is_role_up_results.items()
+        for host, res in is_role_up_results.items() if res
     }
-    joint_stderr = '\n'.join(r.stdout for r in is_role_up_results.values())
+    joint_stderr = '\n'.join(r.stdout for r in is_role_up_results.values() if r)
     return per_hosts_success, joint_stderr
 
 
