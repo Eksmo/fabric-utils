@@ -1,16 +1,22 @@
 import random
-from typing import Optional
+from typing import Optional, Callable, Any
+from functools import wraps
 
-from fabric.api import quiet, puts, task, abort, run
+from fabric.api import quiet, puts, task, abort, run, settings
 from fabric.colors import green as g, red as r, yellow as y
 
 from fabric_utils.healthcheck import check_role_is_up
 
 
 @task
-def docker_swarm_ping_manager() -> str:
-    with quiet():
-        return run('docker node ls')
+def docker_swarm_ping_manager() -> Optional[str]:
+    # a node may fail but this is perfectly fine
+    # perhaps it's under a maintenance?
+    with quiet(), settings(abort_exception=Exception, abort_on_prompts=True):
+        try:
+            return run('docker node ls')
+        except Exception:
+            return None
 
 
 def docker_swarm_select_manager(role: str) -> Optional[str]:
@@ -52,3 +58,17 @@ def docker_swarm_restart(label: str, value: str, stack: str,
         for service_name in service_names.splitlines():
             puts(y(f'restarting service {service_name}'))
             run(f'{command} {service_name}')
+
+
+def with_swarm_node(role: str) -> Callable:
+    """
+    Pick a random swarm node and pass it as a keyword arg to the decorated function
+    """
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*task_args: Any, **task_kwargs: Any) -> Any:
+            swarm_node = docker_swarm_select_manager(role)
+            task_kwargs['node'] = swarm_node
+            return func(*task_args, **task_kwargs)
+        return wrapper
+    return decorator

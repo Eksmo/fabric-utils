@@ -3,9 +3,9 @@ import re
 import json
 from datetime import datetime
 from functools import wraps
-from typing import List, Optional
+from typing import List, Optional, Callable, Any
 
-from fabric.api import quiet, sudo, fastprint, warn, prompt, execute, abort, settings, run
+from fabric.api import quiet, fastprint, warn, prompt, execute, abort, settings, local
 from collections import namedtuple, OrderedDict
 
 
@@ -13,7 +13,7 @@ Commit = namedtuple('Commit', ['sha', 'sha_short', 'msg'])
 Release = namedtuple('Release', ['base', 'release', 'changelog'])
 
 
-def get_release(target_branch: str) -> Release:
+def get_pending_release(call: Callable, target_rev: str, base_rev: Optional['str'] = None) -> Release:
     """
     Return an ordered list of (sha,msg,diff stat) commit tuples for diff between given git revisions
     The first commit is the last commit in the local branch
@@ -21,13 +21,14 @@ def get_release(target_branch: str) -> Release:
     commits = []
 
     teamcity_release_sha = os.environ.get('BUILD_VCS_NUMBER')
-    to_revision = teamcity_release_sha or target_branch
+    to_revision = teamcity_release_sha or target_rev
+    from_revision = base_rev or 'HEAD~1'
 
     with quiet():
-        sudo('git fetch origin')
-        git_log = _get_revision_diff('HEAD~1', to_revision)
+        call('git fetch origin')
+        git_log = _get_revision_diff(call, from_revision, to_revision)
         if not git_log:
-            git_log = _get_revision_diff(f'{to_revision}~1', to_revision)
+            git_log = _get_revision_diff(call, f'{to_revision}~1', to_revision)
 
         # remove empty lines and non git-log lines (such as freebsd login tips)
         lines = []
@@ -54,8 +55,8 @@ def get_release(target_branch: str) -> Release:
     return Release(base=base_commit, release=release_commit, changelog=changelog_commits)
 
 
-def _get_revision_diff(from_revision, to_revision):
-    return sudo(f'git --no-pager log --pretty=oneline --no-color --no-decorate {from_revision}..{to_revision}')
+def _get_revision_diff(call: Callable, from_revision: str, to_revision: str) -> str:
+    return call(f'git --no-pager log --pretty=oneline --no-color --no-decorate {from_revision}..{to_revision}')
 
 
 def _get_commits_for_release(commits: List[Commit], auto: bool = False) -> List[Commit]:
@@ -101,17 +102,37 @@ class FabricException(Exception):
 def with_deploy_lock(set_lock_task, delete_lock_task):
     def decorator(deploy_task):
         @wraps(deploy_task)
-        def inner(*args, **kwargs):
-            lock_acquired = list(execute(set_lock_task).values())[0]
+        def inner(*task_args, **task_kwargs):
+            node = task_kwargs['node']
+            lock_acquired = list(execute(set_lock_task, host=node).values())[0]
             if not lock_acquired:
                 abort('deploy lock is set')
             with settings(abort_exception=FabricException):
                 try:
-                    result = deploy_task(*args, **kwargs)
+                    result = deploy_task(*task_args, **task_kwargs)
                 finally:
-                    execute(delete_lock_task)
+                    execute(delete_lock_task, host=node)
             return result
         return inner
+    return decorator
+
+
+def with_release(template: str,
+                 get_release: Callable,
+                 notify_release_started: Callable,
+                 notify_release_finished: Callable) -> Callable:
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*task_args: Any, **task_kwargs: Any) -> Any:
+            node = task_kwargs['node']
+            release_started_at = datetime.now()
+            release = get_release(node=node)
+            notify_release_started(release=release, node=node, template=template)
+            task_kwargs['release'] = release
+            result = func(*task_args, **task_kwargs)
+            notify_release_finished(release=release, node=node, release_started_at=release_started_at)
+            return result
+        return wrapper
     return decorator
 
 
@@ -134,11 +155,11 @@ def register_sentry_release(release: Release, *, sentry_url: str, org_id: str, p
         }],
         'projects': projects
     }
-    run(f'curl {releases_api_url}'
-        f' -X POST'
-        f' -H "Authorization: Bearer {api_token}"'
-        f' -H "Content-Type: application/json"'
-        f' -d \'{json.dumps(release_data)}\'')
+    local(f'curl {releases_api_url}'
+          f' -X POST'
+          f' -H "Authorization: Bearer {api_token}"'
+          f' -H "Content-Type: application/json"'
+          f' -d \'{json.dumps(release_data)}\'')
 
     release_url = f'{releases_api_url}{release_id}/'
     # register a deployment
@@ -150,8 +171,8 @@ def register_sentry_release(release: Release, *, sentry_url: str, org_id: str, p
             'dateStarted': release_started_at.isoformat(),
             'dateFinished': release_finished_at.isoformat(),
         })
-    run(f'curl {release_url}deploys/'
-        f' -X POST'
-        f' -H "Authorization: Bearer {api_token}"'
-        f' -H "Content-Type: application/json"'
-        f' -d \'{json.dumps(deployment_data)}\'')
+    local(f'curl {release_url}deploys/'
+          f' -X POST'
+          f' -H "Authorization: Bearer {api_token}"'
+          f' -H "Content-Type: application/json"'
+          f' -d \'{json.dumps(deployment_data)}\'')
