@@ -20,10 +20,15 @@ with open('README.rst') as readme_file:
 
 
 requirements = [
-    'GitPython>=1.0.1',
-    'Jinja2>=2.7',
     'requests>=2.10.0'
 ]
+
+extras_requirements = {
+    'legacy': [
+        'GitPython>=1.0.1',
+        'Jinja2>=2.7',
+    ]
+}
 
 setup(
     name='fabric-utils',
@@ -37,6 +42,7 @@ setup(
     package_dir={'fabric_utils': 'fabric_utils'},
     include_package_data=True,
     install_requires=requirements,
+    extras_require=extras_requirements,
     license='BSD',
     zip_safe=False,
     keywords='fabric utils',

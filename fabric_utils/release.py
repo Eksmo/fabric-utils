@@ -25,7 +25,6 @@ def get_pending_release(call: Callable, target_rev: str, base_rev: Optional['str
     from_revision = base_rev or 'HEAD~1'
 
     with quiet():
-        call('git fetch origin')
         git_log = _get_revision_diff(call, from_revision, to_revision)
         if not git_log:
             git_log = _get_revision_diff(call, f'{to_revision}~1', to_revision)
