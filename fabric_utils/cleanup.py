@@ -8,6 +8,7 @@ from .ci import teamcity
 from .helpers import to_bool
 
 
+@task
 def get_stale_docker_branches(run: Callable, *, days: int,
                               project_label: str, project_name: str, branch_label: str) -> List[str]:
     cmd = ("docker ps "
