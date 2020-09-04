@@ -1,7 +1,6 @@
 import os
 import re
 
-from git import Repo
 
 __all__ = [
     'branch_to_db',
@@ -13,6 +12,7 @@ __all__ = [
 
 
 def get_active_branch_name(path=None):
+    from git import Repo
     return Repo(path or os.getcwd()).active_branch.name
 
 
