@@ -1,5 +1,5 @@
-from datetime import datetime, date, timedelta
-from typing import Callable, Any, List
+from datetime import datetime, timedelta
+from typing import Callable, Any, List, Set
 
 from fabric.api import puts, task, settings, execute
 from fabric.colors import green as g, yellow as y
@@ -10,14 +10,14 @@ from .helpers import to_bool
 
 @task
 def get_stale_docker_branches(run: Callable, *, days: int,
-                              project_label: str, project_name: str, branch_label: str) -> List[str]:
+                              project_label: str, project_name: str, branch_label: str) -> Set[str]:
     cmd = ("docker ps "
            "--format '{{ .Label \"%(branch_label)s\" }}:{{ .CreatedAt }}' "
            "--filter 'label=%(project_label)s=%(project_name)s'")
     result = run(cmd % {'branch_label': branch_label,
                         'project_label': project_label,
                         'project_name': project_name})
-    stale_branches = []
+    stale_branches = set()
     least_recent_date = (datetime.today() - timedelta(days=days)).date()
 
     for line in result.split('\n'):
@@ -31,7 +31,7 @@ def get_stale_docker_branches(run: Callable, *, days: int,
 
         branch_deploy_date = datetime.strptime(timestamp[:10], '%Y-%m-%d').date()
         if branch_deploy_date <= least_recent_date:
-            stale_branches.append(branch_slug)
+            stale_branches.add(branch_slug)
 
     return stale_branches
 
