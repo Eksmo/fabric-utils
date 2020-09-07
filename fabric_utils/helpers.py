@@ -1,5 +1,7 @@
 import os
+import platform
 import re
+import sys
 from typing import Any
 from functools import partial, wraps
 from contextlib import contextmanager
@@ -137,6 +139,10 @@ def to_bool(value: Any) -> bool:
         return True
 
     return False
+
+
+def is_parallel_supported():
+    return not (sys.version_info > (3, 8) and platform.system() == 'Darwin')
 
 
 template = partial(upload_template, use_jinja=True, backup=False)

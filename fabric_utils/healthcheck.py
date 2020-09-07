@@ -6,6 +6,8 @@ from fabric.operations import run
 from fabric.tasks import execute
 from fabric.utils import error
 
+from .helpers import is_parallel_supported
+
 
 def check_uwsgi_is_200_ok(url, uwsgi_port=None, uwsgi_sock=None, status='200 OK'):
     with settings(hide('stdout')):
@@ -28,7 +30,7 @@ def check_http_is_200_ok(healthcheck_url, http_host=None, unix_sock=None, status
 
 
 def check_role_is_up(role: str, task: Callable, *task_args: Any, **task_kwargs: Any) -> Tuple[dict, str]:
-    with settings(parallel=True):
+    with settings(parallel=is_parallel_supported()):
         is_role_up_results = execute(task, role=role, *task_args, **task_kwargs)
     per_hosts_success = {
         host: res.succeeded
