@@ -2,7 +2,7 @@ import os
 import platform
 import re
 import sys
-from typing import Any
+from typing import Any, List, Callable
 from functools import partial, wraps
 from contextlib import contextmanager
 
@@ -146,3 +146,18 @@ def is_parallel_supported():
 
 
 template = partial(upload_template, use_jinja=True, backup=False)
+
+
+def with_random_node(nodes: List[str], randomizer: Callable) -> Callable:
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*task_args: Any, **task_kwargs: Any) -> Any:
+            node_idx = randomizer(*task_args, **task_kwargs)
+            task_kwargs['node'] = nodes[node_idx]
+            return func(*task_args, **task_kwargs)
+        return wrapper
+    return decorator
+
+
+with_branch_node = partial(with_random_node,
+                           randomizer=lambda b, *args, **kws: sum(map(ord, b.name)) % len(b.hosts))
