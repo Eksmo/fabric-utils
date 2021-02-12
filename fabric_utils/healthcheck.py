@@ -62,6 +62,6 @@ def wait_until_role_is_up(task: Callable, poll_interval: int = 3, max_wait: int 
         waiting_seconds += poll_interval
 
     with settings(warn_only=False):
-        error(f'waited for {waiting_seconds} seconds, role role/host is not up. Aborting \n {stderr}')
+        error(f'waited for {waiting_seconds} seconds, role/host is not up. Aborting \n {stderr}')
 
     return False
