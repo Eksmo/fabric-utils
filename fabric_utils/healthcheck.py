@@ -29,9 +29,9 @@ def check_http_is_200_ok(healthcheck_url, http_host=None, unix_sock=None, status
         return result
 
 
-def check_role_is_up(role: str, task: Callable, *task_args: Any, **task_kwargs: Any) -> Tuple[dict, str]:
+def check_role_is_up(task: Callable, *task_args: Any, **task_kwargs: Any) -> Tuple[dict, str]:
     with settings(parallel=is_parallel_supported()):
-        is_role_up_results = execute(task, role=role, *task_args, **task_kwargs)
+        is_role_up_results = execute(task, *task_args, **task_kwargs)
     per_hosts_success = {
         host: res.succeeded
         for host, res in is_role_up_results.items() if res
@@ -40,28 +40,28 @@ def check_role_is_up(role: str, task: Callable, *task_args: Any, **task_kwargs: 
     return per_hosts_success, joint_stderr
 
 
-def wait_until_role_is_up(*, role: str, task: Callable, poll_interval: int = 3, max_wait: int = 20,
+def wait_until_role_is_up(task: Callable, poll_interval: int = 3, max_wait: int = 20, check=all,
                           task_args: Optional[Tuple[Any]] = None, task_kwargs: Optional[Dict[str, Any]] = None) -> bool:
     waiting_seconds = 0
     stderr = '-'
     task_args = task_args or ()
     task_kwargs = task_kwargs or {}
 
-    puts(f'waiting for {role} to be up for as long as {max_wait} seconds')
+    puts(f'waiting for role/host to be up for as long as {max_wait} seconds')
     while waiting_seconds < max_wait:
         # skip waiting on the first iteration, app may already be up
-        up_hosts, stderr = check_role_is_up(role, task, *task_args, **task_kwargs)
-        if all(up_hosts.values()):
-            puts(f'role {role} is up after {waiting_seconds} seconds')
+        up_hosts, stderr = check_role_is_up(task, *task_args, **task_kwargs)
+        if check(up_hosts.values()):
+            puts(f'role/host is up after {waiting_seconds} seconds')
             return True
         else:
             failed_hosts = ', '.join([host for host, status in up_hosts.items() if not status])
-            puts(f'role {role} is not up after {waiting_seconds} seconds: failed hosts: {failed_hosts}')
+            puts(f'role/host is not up after {waiting_seconds} seconds: failed hosts: {failed_hosts}')
 
         sleep(poll_interval)
         waiting_seconds += poll_interval
 
     with settings(warn_only=False):
-        error(f'waited for {waiting_seconds} seconds, role {role} is not up. Aborting \n {stderr}')
+        error(f'waited for {waiting_seconds} seconds, role/host is not up. Aborting \n {stderr}')
 
     return False

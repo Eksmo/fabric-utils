@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Callable, Any, List, Set
+from typing import Callable, Optional, Any, List, Set, Tuple, Dict
 
 from fabric.api import puts, task, settings, execute
 from fabric.colors import green as g, yellow as y
@@ -40,11 +40,18 @@ def get_stale_docker_branches(run: Callable, *, days: int,
 def prune_stale_branches(get_stale_branches: Callable,
                          destroy_branch: Callable,
                          protected_branches: List[str],
-                         days: int = 7, dry_run: bool = False, **kwargs: Any) -> None:
+                         days: int = 7,
+                         dry_run: bool = False,
+                         task_args: Optional[Tuple] = None,
+                         task_kwargs: Optional[Dict] = None,
+                         **kwargs: Any) -> None:
     """
     Destroy all branch instances that were last deployed this or greater days ago.
     Although demo and master should be kept protected from this deadly action.
     """
+    task_args = task_args or ()
+    task_kwargs = task_kwargs or {}
+
     inside_teamcity = kwargs.get('teamcity')
     dry_run = to_bool(dry_run)
 
@@ -73,7 +80,7 @@ def prune_stale_branches(get_stale_branches: Callable,
         try:
             with settings(abort_exception=Exception):
                 if not dry_run:
-                    execute(destroy_branch, branch_slug)
+                    execute(destroy_branch, branch_slug, *task_args, **task_kwargs)
                     puts(y(f'destroyed branch {branch_slug}'))
                 else:
                     puts(g(f'would destroy branch {branch_slug}'))
