@@ -20,7 +20,7 @@ def docker_swarm_ping_manager() -> Optional[str]:
 
 
 def docker_swarm_select_manager(role: str) -> Optional[str]:
-    checked_hosts, stderr = check_role_is_up(role, docker_swarm_ping_manager)
+    checked_hosts, stderr = check_role_is_up(docker_swarm_ping_manager, role=role)
     if any(checked_hosts.values()):
         good_hosts = [host for host, status in checked_hosts.items() if status]
         puts(g(f'swarm is healthy. {len(good_hosts)}/{len(checked_hosts)} available managers: {", ".join(good_hosts)}'))
